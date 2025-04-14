@@ -2,8 +2,8 @@ docker
 flink-image
 helm
 k8s
-flink
-kafka
+./flink
+./kafka
 deploy-flink.ps1
 deploy-kafka.ps1
 CDC_kafka_iceberg.png
