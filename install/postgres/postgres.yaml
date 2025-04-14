@@ -1,0 +1,96 @@
+kind: PersistentVolume 
+apiVersion: v1 
+metadata: 
+  name: postgres-pv-volume 
+  labels: 
+    type: local 
+    app: postgres 
+spec: 
+  storageClassName: standard
+  capacity: 
+    storage: 1Gi 
+  accessModes: 
+    - ReadWriteOnce 
+  hostPath: 
+    path: "/opt/data" 
+
+--- 
+kind: PersistentVolumeClaim 
+apiVersion: v1 
+metadata: 
+  name: postgres-pv-claim 
+  labels: 
+    app: postgres 
+spec: 
+  storageClassName: standard 
+  accessModes: 
+    - ReadWriteOnce
+  resources: 
+    requests: 
+      storage: 1Gi 
+
+---
+apiVersion: v1 
+kind: ConfigMap 
+metadata: 
+  name: postgres-config 
+  labels: 
+    app: postgres 
+data: 
+  POSTGRES_DB: postgresdb 
+  POSTGRES_USER: admin 
+  POSTGRES_PASSWORD: admin
+
+---
+apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+  name: postgres 
+spec: 
+  replicas: 1 
+  selector: 
+    matchLabels: 
+      app: postgres 
+  template: 
+    metadata: 
+      labels: 
+        app: postgres 
+    spec: 
+      containers: 
+        - name: postgres 
+          image: postgres:10.1 
+          imagePullPolicy: "IfNotPresent" 
+          ports: 
+            - containerPort: 5432 
+          envFrom: 
+            - configMapRef: 
+                name: postgres-config 
+          command: 
+            - "postgres"
+            - "-c"
+            - "wal_level=logical"
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 999
+          volumeMounts: 
+            - mountPath: /var/lib/postgresql/data 
+              name: postgredb 
+      volumes: 
+        - name: postgredb 
+          persistentVolumeClaim: 
+            claimName: postgres-pv-claim
+
+---
+apiVersion: v1 
+kind: Service 
+metadata: 
+  name: postgres 
+  labels: 
+    app: postgres 
+spec: 
+  type: NodePort 
+  ports: 
+    - port: 5432 
+      targetPort: 5432
+  selector: 
+    app: postgres
