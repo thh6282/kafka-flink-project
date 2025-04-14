@@ -29,9 +29,9 @@ spec:
         - name: KAFKA_CLUSTERS_0_ZOOKEEPER
           value: "zookeeper:2181"
         - name: KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME
-          value: "debezium"
+          value: "kafka-connect"
         - name: KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS
-          value: "http://debezium:8083"
+          value: "http://kafka-connect:8083"
 ---
 apiVersion: v1
 kind: Service
