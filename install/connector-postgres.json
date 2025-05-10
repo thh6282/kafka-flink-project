@@ -3,8 +3,8 @@
     "config": {
       "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
       "plugin.name": "pgoutput",
-      "database.hostname": "172.21.228.21",
-      "database.port": "31975",
+      "database.hostname": "172.21.234.140",
+      "database.port": "32687",
       "database.user": "admin",
       "database.password": "admin",
       "database.dbname": "postgresdb",
