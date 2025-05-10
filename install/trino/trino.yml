@@ -1,0 +1,103 @@
+# ConfigMap chứa cấu hình catalog Nessie
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-catalog-config
+data:
+  # Catalog cho Nessie (Iceberg)
+  nessie.properties: |
+    connector.name=iceberg
+    iceberg.catalog.type=nessie
+    iceberg.nessie.uri=http://catalog:19120/api/v1
+    iceberg.nessie.ref=main
+    iceberg.file-format=PARQUET
+    hive.s3.aws-access-key=admin
+    hive.s3.aws-secret-key=password
+    hive.s3.endpoint=http://storage:9000
+    hive.s3.path-style-access=true
+    hive.s3.ssl.enabled=false
+    hive.s3.region=us-east-1
+
+  # Catalog cho hệ thống (bắt buộc)
+  system.properties: |
+    connector.name=system
+    system.metadata.enabled=false
+
+  # Cấu hình JVM
+  jvm.config: |
+    -server
+    -Xmx2G
+    -XX:-UseBiasedLocking
+    -XX:+UseG1GC
+    -XX:G1HeapRegionSize=32M
+    -XX:+ExplicitGCInvokesConcurrent
+    -XX:+ExitOnOutOfMemoryError
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:-OmitStackTraceInFastThrow
+
+  # Cấu hình log
+  log.properties: |
+    io.trino=INFO
+
+---
+# Deployment cho Trino Coordinator
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trino-coordinator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trino
+      component: coordinator
+  template:
+    metadata:
+      labels:
+        app: trino
+        component: coordinator
+    spec:
+      containers:
+      - name: trino
+        image: trinodb/trino:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          value: "hoangth"
+        - name: AWS_SECRET_ACCESS_KEY
+          value: "hoangth1118"
+        - name: AWS_REGION
+          value: "us-east-1"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/trino/catalog/nessie.properties
+          subPath: nessie.properties
+        - name: config-volume
+          mountPath: /etc/trino/catalog/system.properties
+          subPath: system.properties
+        - name: config-volume
+          mountPath: /etc/trino/config/jvm.config
+          subPath: jvm.config
+        - name: config-volume
+          mountPath: /etc/trino/config/log.properties
+          subPath: log.properties
+      volumes:
+      - name: config-volume
+        configMap:
+          name: trino-catalog-config
+
+---
+# Service để truy cập Trino
+apiVersion: v1
+kind: Service
+metadata:
+  name: trino
+spec:
+  type: NodePort
+  selector:
+    app: trino
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080

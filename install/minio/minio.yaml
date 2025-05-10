@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: storage
+spec:
+  serviceName: storage
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storage
+  template:
+    metadata:
+      labels:
+        app: storage
+    spec:
+      containers:
+      - name: storage
+        image: minio/minio
+        args: ["server", "/data", "--console-address", ":9001"]
+        ports:
+        - containerPort: 9000
+        - containerPort: 9001
+        env:
+        - name: MINIO_ROOT_USER
+          value: "hoangth"
+        - name: MINIO_ROOT_PASSWORD
+          value: "hoangth1118"
+        - name: MINIO_DOMAIN
+          value: "localhost"
+        - name: MINIO_REGION_NAME
+          value: "us-east-1"
+        - name: MINIO_REGION
+          value: "us-east-1"
+        volumeMounts:
+        - name: minio-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: minio-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage
+spec:
+  selector:
+    app: storage
+  ports:
+  - name: api
+    port: 9000
+    targetPort: 9000
+  - name: console
+    port: 9001
+    targetPort: 9001
